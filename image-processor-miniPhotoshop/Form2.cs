@@ -35,62 +35,39 @@ namespace image_processor_miniPhotoshop
 
         }
 
-        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        private Bitmap ApplyPixelFilter(Bitmap src, Func<Color, Color> transform)
         {
-           bitmap = new Bitmap(pictureBox1.Image);
-           newPhoto = new Bitmap(bitmap.Width, bitmap.Height);
-            for (int y = 0; y < bitmap.Height; y++)
+            Bitmap result = new Bitmap(src.Width, src.Height);
+            for (int y = 0; y < src.Height; y++)
             {
-                for (int x = 0; x < bitmap.Width; x++)
+                for (int x = 0; x < src.Width; x++)
                 {
-                    Color pixelColor = bitmap.GetPixel(x, y);
-                    newPhoto.SetPixel(x, y, pixelColor);
+                    result.SetPixel(x, y, transform(src.GetPixel(x, y)));
                 }
             }
+            return result;
+        }
 
-            pictureBox2.Image = newPhoto;
+        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            bitmap = new Bitmap(pictureBox1.Image);
+            pictureBox2.Image = ApplyPixelFilter(bitmap, c => c);
 
         }
 
         private void greyscaleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             bitmap = new Bitmap(pictureBox1.Image);
-            newPhoto = new Bitmap(bitmap.Width, bitmap.Height);
-            for (int y = 0; y < bitmap.Height; y++)
-            {
-                for (int x = 0; x < bitmap.Width; x++)
-                {
-                    Color pixelColor = bitmap.GetPixel(x, y);
-                    int grey = (int)(pixelColor.R * 0.3 + pixelColor.G * 0.59 + pixelColor.B * 0.11);
-                    Color greyColor = Color.FromArgb(grey, grey, grey);
-                    newPhoto.SetPixel(x, y, greyColor);
-                }
-            }
-
-            pictureBox2.Image = newPhoto;
-        }
-
-
-        public static Color InvertColor(Color color)
-        {
-            return Color.FromArgb(255 - color.R, 255 - color.G, 255 - color.B);
+            pictureBox2.Image = ApplyPixelFilter(bitmap, c => {
+                int g = (int)(c.R * 0.3 + c.G * 0.59 + c.B * 0.11);
+                return Color.FromArgb(g, g, g);
+            });
         }
 
         private void colorInversionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-             bitmap = new Bitmap(pictureBox1.Image);
-             newPhoto = new Bitmap(bitmap.Width, bitmap.Height);  
-             
-            for (int x = 0; x < bitmap.Width; x++)
-            {
-                for(int y = 0; y < bitmap.Height; y++)
-                {
-                    Color originalColor = bitmap.GetPixel(x, y);
-                    Color invertedColor = InvertColor(originalColor);
-                    newPhoto.SetPixel(x, y, invertedColor);
-                }
-            }
-            pictureBox2.Image = newPhoto;
+            bitmap = new Bitmap(pictureBox1.Image);
+            pictureBox2.Image = ApplyPixelFilter(bitmap, c => Color.FromArgb(255 - c.R, 255 - c.G, 255 - c.B));
         }
 
         private void histogramToolStripMenuItem_Click(object sender, EventArgs e)
@@ -133,24 +110,12 @@ namespace image_processor_miniPhotoshop
         private void sepiaToolStripMenuItem_Click(object sender, EventArgs e)
         {
             bitmap = new Bitmap(pictureBox1.Image);
-            newPhoto = new Bitmap(bitmap.Width, bitmap.Height);
-
-            for(int y = 0; y < bitmap.Height; y++)
-            {
-                for(int x = 0; x < bitmap.Width; x++)
-                {
-                    Color pixelColor = bitmap.GetPixel(x, y);
-                    int tr = (int)(0.393 * pixelColor.R + 0.769 * pixelColor.G + 0.189 * pixelColor.B);
-                    int tg = (int)(0.349 * pixelColor.R + 0.686 * pixelColor.G + 0.168 * pixelColor.B);
-                    int tb = (int)(0.272 * pixelColor.R + 0.534 * pixelColor.G + 0.131 * pixelColor.B);
-                    tr = Math.Min(255, tr);
-                    tg = Math.Min(255, tg);
-                    tb = Math.Min(255, tb);
-                    Color sepiaColor = Color.FromArgb(tr, tg, tb);
-                    newPhoto.SetPixel(x, y, sepiaColor);
-                }
-            }
-                pictureBox2.Image = newPhoto;
+            pictureBox2.Image = ApplyPixelFilter(bitmap, c => {
+                int tr = (int)(0.393 * c.R + 0.769 * c.G + 0.189 * c.B);
+                int tg = (int)(0.349 * c.R + 0.686 * c.G + 0.168 * c.B);
+                int tb = (int)(0.272 * c.R + 0.534 * c.G + 0.131 * c.B);
+                return Color.FromArgb(Math.Min(255, tr), Math.Min(255, tg), Math.Min(255, tb));
+            });
         }
 
         private void savePhotoToolStripMenuItem_Click(object sender, EventArgs e)
@@ -192,11 +157,11 @@ namespace image_processor_miniPhotoshop
 
         private void backToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            this.Hide(); 
+            this.Hide();
             Form1 mainForm = Application.OpenForms.OfType<Form1>().FirstOrDefault();
             if (mainForm != null)
             {
-                mainForm.Show(); 
+                mainForm.Show();
             }
         }
 
@@ -280,74 +245,15 @@ namespace image_processor_miniPhotoshop
                 return;
             }
 
-            Bitmap b = new Bitmap(pictureBox1.Image); // source image
-            Bitmap bSrc = (Bitmap)b.Clone();
-            Bitmap newBitmap = new Bitmap(b.Width, b.Height);
+            Bitmap bitmap = new Bitmap(pictureBox1.Image);
 
-            // Example convolution matrix (shrink/blur-like effect)
             ConvMatrix m = new ConvMatrix();
             m.SetAll(1);
             m.Pixel = 1;
-            m.Factor = 9; // average of 9 pixels
+            m.Factor = 9; // average blur
 
-            BitmapData bmData = b.LockBits(new Rectangle(0, 0, b.Width, b.Height),
-                                           ImageLockMode.ReadWrite,
-                                           PixelFormat.Format24bppRgb);
-
-            BitmapData bmSrc = bSrc.LockBits(new Rectangle(0, 0, bSrc.Width, bSrc.Height),
-                                             ImageLockMode.ReadWrite,
-                                             PixelFormat.Format24bppRgb);
-
-            int stride = bmData.Stride;
-            int stride2 = stride * 2;
-
-            unsafe
-            {
-                byte* p = (byte*)(void*)bmData.Scan0;
-                byte* pSrc = (byte*)(void*)bmSrc.Scan0;
-
-                int nOffset = stride - b.Width * 3;
-                int nWidth = b.Width - 2;
-                int nHeight = b.Height - 2;
-
-                for (int y = 0; y < nHeight; ++y)
-                {
-                    for (int x = 0; x < nWidth; ++x)
-                    {
-                        for (int color = 0; color < 3; color++) // B, G, R channels
-                        {
-                            int nPixel =
-                                (
-                                    (pSrc[color] * m.TopLeft) +
-                                    (pSrc[color + 3] * m.TopMid) +
-                                    (pSrc[color + 6] * m.TopRight) +
-                                    (pSrc[color + stride] * m.MidLeft) +
-                                    (pSrc[color + stride + 3] * m.Pixel) +
-                                    (pSrc[color + stride + 6] * m.MidRight) +
-                                    (pSrc[color + stride2] * m.BottomLeft) +
-                                    (pSrc[color + stride2 + 3] * m.BottomMid) +
-                                    (pSrc[color + stride2 + 6] * m.BottomRight)
-                                ) / m.Factor + m.Offset;
-
-                            if (nPixel < 0) nPixel = 0;
-                            if (nPixel > 255) nPixel = 255;
-
-                            p[color + stride] = (byte)nPixel;
-                        }
-
-                        p += 3;
-                        pSrc += 3;
-                    }
-
-                    p += nOffset;
-                    pSrc += nOffset;
-                }
-            }
-
-            b.UnlockBits(bmData);
-            bSrc.UnlockBits(bmSrc);
-
-            pictureBox2.Image = b;
+            BitmapFilter.Conv3x3(bitmap, m);
+            pictureBox2.Image = bitmap;
         }
 
         private void smoothingToolStripMenuItem_Click(object sender, EventArgs e)
@@ -447,207 +353,7 @@ namespace image_processor_miniPhotoshop
 
             pictureBox2.Image = bitmap;
         }
-    }
-}
-
-namespace image_processor_miniPhotoshop
-{
-    public static class BitmapFilter
-    {
-        public static bool Conv3x3(Bitmap b, Form2.ConvMatrix m)
-        {
-            if (m.Factor == 0)
-                return false;
-
-            Bitmap bSrc = (Bitmap)b.Clone();
-
-            BitmapData bmData = b.LockBits(new Rectangle(0, 0, b.Width, b.Height),
-                                           ImageLockMode.ReadWrite,
-                                           PixelFormat.Format24bppRgb);
-
-            BitmapData bmSrc = bSrc.LockBits(new Rectangle(0, 0, bSrc.Width, bSrc.Height),
-                                             ImageLockMode.ReadWrite,
-                                             PixelFormat.Format24bppRgb);
-
-            int stride = bmData.Stride;
-            int stride2 = stride * 2;
-
-            unsafe
-            {
-                byte* p = (byte*)(void*)bmData.Scan0;
-                byte* pSrc = (byte*)(void*)bmSrc.Scan0;
-
-                int nOffset = stride - b.Width * 3;
-                int nWidth = b.Width - 2;
-                int nHeight = b.Height - 2;
-
-                for (int y = 0; y < nHeight; ++y)
-                {
-                    for (int x = 0; x < nWidth; ++x)
-                    {
-                        for (int color = 0; color < 3; color++) // process B, G, R
-                        {
-                            int nPixel =
-                                (
-                                    (pSrc[color] * m.TopLeft) +
-                                    (pSrc[color + 3] * m.TopMid) +
-                                    (pSrc[color + 6] * m.TopRight) +
-                                    (pSrc[color + stride] * m.MidLeft) +
-                                    (pSrc[color + stride + 3] * m.Pixel) +
-                                    (pSrc[color + stride + 6] * m.MidRight) +
-                                    (pSrc[color + stride2] * m.BottomLeft) +
-                                    (pSrc[color + stride2 + 3] * m.BottomMid) +
-                                    (pSrc[color + stride2 + 6] * m.BottomRight)
-                                ) / m.Factor + m.Offset;
-
-                            if (nPixel < 0) nPixel = 0;
-                            if (nPixel > 255) nPixel = 255;
-
-                            p[color + stride] = (byte)nPixel;
-                        }
-
-                        p += 3;
-                        pSrc += 3;
-                    }
-
-                    p += nOffset;
-                    pSrc += nOffset;
-                }
-            }
-
-            b.UnlockBits(bmData);
-            bSrc.UnlockBits(bmSrc);
-
-            return true;
-        }
-
-        public static bool GaussianBlur(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = 1; m.TopMid = 2; m.TopRight = 1;
-            m.MidLeft = 2; m.Pixel = 4; m.MidRight = 2;
-            m.BottomLeft = 1; m.BottomMid = 2; m.BottomRight = 1;
-
-            m.Factor = 16;  // sum of kernel weights
-            m.Offset = 0;
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool Sharpen(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = 0; m.TopMid = -2; m.TopRight = 0;
-            m.MidLeft = -2; m.Pixel = 11; m.MidRight = -2;
-            m.BottomLeft = 0; m.BottomMid = -2; m.BottomRight = 0;
-
-            m.Factor = 3;   // normalization factor
-            m.Offset = 0;   // no brightness adjustment
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool MeanRemoval(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = -1; m.TopMid = -1; m.TopRight = -1;
-            m.MidLeft = -1; m.Pixel = 9; m.MidRight = -1;
-            m.BottomLeft = -1; m.BottomMid = -1; m.BottomRight = -1;
-
-            m.Factor = 1;   // normalization factor
-            m.Offset = 0;   // no brightness adjustment
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool EmbossLaplacian(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = -1; m.TopMid = 0; m.TopRight = -1;
-            m.MidLeft = 0; m.Pixel = 4; m.MidRight = 0;
-            m.BottomLeft = -1; m.BottomMid = 0; m.BottomRight = -1;
-
-            m.Factor = 1;    // no normalization
-            m.Offset = 127;  // shift grayscale to middle range
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool Embossy_HV(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = 0; m.TopMid = -1; m.TopRight = 0;
-            m.MidLeft = -1; m.Pixel = 4; m.MidRight = -1;
-            m.BottomLeft = 0; m.BottomMid = -1; m.BottomRight = 0;
-
-            m.Factor = 1;
-            m.Offset = 127;
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool Embossy_All(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = -1; m.TopMid = -1; m.TopRight = -1;
-            m.MidLeft = -1; m.Pixel = 8; m.MidRight = -1;
-            m.BottomLeft = -1; m.BottomMid = -1; m.BottomRight = -1;
-
-            m.Factor = 1;
-            m.Offset = 127;
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool Embossy_Lossy(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = 1; m.TopMid = -2; m.TopRight = 1;
-            m.MidLeft = -2; m.Pixel = 4; m.MidRight = -2;
-            m.BottomLeft = -2; m.BottomMid = 1; m.BottomRight = -2;
-
-            m.Factor = 1;
-            m.Offset = 127;
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool Embossy_Horizontal(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = 0; m.TopMid = 0; m.TopRight = 0;
-            m.MidLeft = -1; m.Pixel = 2; m.MidRight = -1;
-            m.BottomLeft = 0; m.BottomMid = 0; m.BottomRight = 0;
-
-            m.Factor = 1;
-            m.Offset = 127;
-
-            return Conv3x3(b, m);
-        }
-
-        public static bool Embossy_Vertical(Bitmap b)
-        {
-            Form2.ConvMatrix m = new Form2.ConvMatrix();
-
-            m.TopLeft = 0; m.TopMid = -1; m.TopRight = 0;
-            m.MidLeft = 0; m.Pixel = 0; m.MidRight = 0;
-            m.BottomLeft = 0; m.BottomMid = 1; m.BottomRight = 0;
-
-            m.Factor = 1;
-            m.Offset = 127;
-
-            return Conv3x3(b, m);
-        }
-
-    }
+    }  
 }
 
 

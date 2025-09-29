@@ -4,6 +4,7 @@ using System.Linq; // Needed for the Histogram .Max() method
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WebCamLib;
+using static image_processor_miniPhotoshop.Form2;
 
 namespace image_processor_miniPhotoshop
 {
@@ -259,6 +260,171 @@ namespace image_processor_miniPhotoshop
         private void label2_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void Form3_Load_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void shrinkToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+
+            ConvMatrix m = new ConvMatrix();
+            m.SetAll(1);
+            m.Pixel = 1;
+            m.Factor = 9; // average
+
+            BitmapFilter.Conv3x3(bitmap, m);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void smoothinToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+
+            ConvMatrix m = new ConvMatrix();
+            m.SetAll(1);
+            m.Pixel = 1;
+            m.Factor = 9;
+
+            BitmapFilter.Conv3x3(bitmap, m);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void gaussianBlurToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.GaussianBlur(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void sharpenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.Sharpen(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void meanRemovalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.MeanRemoval(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void embossLaplascianToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.EmbossLaplacian(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void horzVerticalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.Embossy_HV(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void allDirectionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.Embossy_All(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void lossyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.Embossy_Lossy(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void horizontalOnlyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.Embossy_Horizontal(bitmap);
+            pictureBox2.Image = bitmap;
+        }
+
+        private void verticalOnlyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (capturedPhoto == null)
+            {
+                MessageBox.Show("Please capture a photo first (File -> Copy).");
+                return;
+            }
+
+            Bitmap bitmap = new Bitmap(capturedPhoto);
+            BitmapFilter.Embossy_Vertical(bitmap);
+            pictureBox2.Image = bitmap;
         }
     }
 }
